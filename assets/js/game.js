@@ -97,19 +97,12 @@ class AudioSystem {
   constructor() {
     this.ctx = null;
     this.enabled = true;
-    this.currentTrack = 'none'; // 'none' | 'menu' | 'dungeon'
+    this.currentTrack = 'menu'; // 'none' | 'menu' | 'dungeon'
     this.isPaused = false;
 
     // Menu music audio element (RoccoW - Party's Cancelled)
     this.menuAudio = null;
-    try {
-      this.menuAudio = new Audio('assets/audio/menu-theme.mp3');
-      this.menuAudio.loop = true;
-      this.menuAudio.volume = 0.28;
-      this.menuAudio.preload = 'auto';
-    } catch (e) {
-      this.menuAudio = null;
-    }
+    this.initMenuAudio();
 
     // Dungeon 2D chiptune tracker nodes
     this.bgmGain = null;
@@ -120,6 +113,19 @@ class AudioSystem {
     this.tempo = 124; // BPM
     this.stepInterval = 60 / (this.tempo * 4); // 16th note ~0.121s
     this.noiseBuffer = null;
+  }
+
+  initMenuAudio() {
+    try {
+      if (!this.menuAudio) {
+        this.menuAudio = new Audio('assets/audio/menu-theme.mp3');
+        this.menuAudio.loop = true;
+        this.menuAudio.volume = 0.35;
+        this.menuAudio.preload = 'auto';
+      }
+    } catch (e) {
+      console.warn('Audio element error:', e);
+    }
   }
 
   init() {
@@ -164,13 +170,16 @@ class AudioSystem {
   playMenuMusic() {
     this.currentTrack = 'menu';
     this.stopDungeonMusic();
-    if (!this.enabled || !this.menuAudio) return;
+    if (!this.enabled) return;
 
-    this.menuAudio.volume = 0.28;
+    this.initMenuAudio();
+    if (!this.menuAudio) return;
+
+    this.menuAudio.volume = 0.35;
     const playPromise = this.menuAudio.play();
     if (playPromise !== undefined) {
-      playPromise.catch(() => {
-        // Will retry automatically on first user click/touch
+      playPromise.catch(err => {
+        // Autoplay policy prevented playback, will retry on any user interaction
       });
     }
   }
@@ -406,12 +415,13 @@ class AudioSystem {
         this.bgmGain.gain.setValueAtTime(0, this.ctx.currentTime);
       }
     } else {
-      if (this.currentTrack === 'menu') {
+      if (this.ctx && this.ctx.state === 'suspended') {
+        this.ctx.resume();
+      }
+      if (game.state === GameState.TITLE || this.currentTrack === 'menu') {
         this.playMenuMusic();
-      } else if (this.currentTrack === 'dungeon') {
-        if (this.bgmGain && this.ctx) {
-          this.bgmGain.gain.setValueAtTime(0.14, this.ctx.currentTime);
-        }
+      } else if (game.state === GameState.PLAYING || this.currentTrack === 'dungeon') {
+        this.startDungeonMusic();
       }
     }
     return this.enabled;
@@ -1030,7 +1040,7 @@ function renderPuzzle(phase) {
   // Hint button & container
   html += `
     <button class="puzzle-hint-btn" id="hint-btn" ${game.phaseHintsUsed >= game.maxHintsPerPhase ? 'disabled' : ''}>
-      💡 USAR DICA (${game.maxHintsPerPhase - game.phaseHintsUsed} restantes)
+      <svg class="pixel-icon"><use href="#px-hint"></use></svg> USAR DICA (${game.maxHintsPerPhase - game.phaseHintsUsed} restantes)
     </button>
     <div class="puzzle-hints" id="hints-container"></div>
   `;
@@ -1270,13 +1280,13 @@ function useHint(phase) {
   const container = document.getElementById('hints-container');
   const hintEl = document.createElement('div');
   hintEl.className = 'hint-item';
-  hintEl.textContent = `💡 ${hint}`;
+  hintEl.innerHTML = `<span class="hint-icon"><svg class="pixel-icon"><use href="#px-hint"></use></svg></span> ${hint}`;
   container.appendChild(hintEl);
 
   // Update hint button
   const hintBtn = document.getElementById('hint-btn');
   const remaining = game.maxHintsPerPhase - game.phaseHintsUsed;
-  hintBtn.textContent = `💡 USAR DICA (${remaining} restantes)`;
+  hintBtn.innerHTML = `<svg class="pixel-icon"><use href="#px-hint"></use></svg> USAR DICA (${remaining} restantes)`;
   if (remaining <= 0) hintBtn.disabled = true;
 
   updateHUD();
@@ -1336,17 +1346,18 @@ function sleep(ms) {
 function init() {
   dom.init();
 
-  // Initialize audio on first interaction
-  const initAudio = () => {
+  // Reliable audio unlocking on user interaction
+  const tryStartMenuMusic = () => {
     game.audio.init();
-    if (game.state === GameState.TITLE && game.audio.enabled) {
-      game.audio.playMenuMusic();
+    if (game.audio.enabled && game.state === GameState.TITLE) {
+      if (!game.audio.menuAudio || game.audio.menuAudio.paused) {
+        game.audio.playMenuMusic();
+      }
     }
-    document.removeEventListener('click', initAudio);
-    document.removeEventListener('keydown', initAudio);
   };
-  document.addEventListener('click', initAudio);
-  document.addEventListener('keydown', initAudio);
+  ['pointerdown', 'click', 'keydown'].forEach(evt => {
+    document.addEventListener(evt, tryStartMenuMusic);
+  });
 
   // Matrix rain
   const matrixCanvas = document.getElementById('matrix-canvas');
@@ -1449,7 +1460,9 @@ function init() {
     const on = game.audio.enabled;
 
     // Pause UI
-    if (pauseSoundIcon) pauseSoundIcon.textContent = on ? '🔊' : '🔇';
+    if (pauseSoundIcon) {
+      pauseSoundIcon.innerHTML = `<svg class="pixel-icon"><use href="#px-${on ? 'sound' : 'sound-mute'}"></use></svg>`;
+    }
     if (pauseSoundLbl)  pauseSoundLbl.textContent  = on ? 'SOM: LIGADO' : 'SOM: DESLIGADO';
 
     // Settings modal toggle
@@ -1467,11 +1480,15 @@ function init() {
     if (titleAudioBtn) {
       if (on) {
         titleAudioBtn.classList.remove('muted');
-        if (titleAudioIcon) titleAudioIcon.textContent = '🔊';
+        if (titleAudioIcon) {
+          titleAudioIcon.innerHTML = `<svg class="pixel-icon"><use href="#px-sound"></use></svg>`;
+        }
         if (titleAudioLbl)  titleAudioLbl.textContent  = "MÚSICA: ROCCOW · PARTY'S CANCELLED";
       } else {
         titleAudioBtn.classList.add('muted');
-        if (titleAudioIcon) titleAudioIcon.textContent = '🔇';
+        if (titleAudioIcon) {
+          titleAudioIcon.innerHTML = `<svg class="pixel-icon"><use href="#px-sound-mute"></use></svg>`;
+        }
         if (titleAudioLbl)  titleAudioLbl.textContent  = "SOM: MUTADO (CLIQUE P/ ATIVAR)";
       }
     }
@@ -1480,9 +1497,15 @@ function init() {
   // Title audio pill click
   const titleAudioPill = document.getElementById('title-audio-btn');
   if (titleAudioPill) {
-    titleAudioPill.addEventListener('click', () => {
+    titleAudioPill.addEventListener('click', (e) => {
+      e.stopPropagation();
       game.audio.init();
-      game.audio.toggleSound();
+      // If audio is enabled but was not playing (e.g. autoplay blocked initially), start it!
+      if (game.audio.enabled && game.audio.menuAudio && game.audio.menuAudio.paused) {
+        game.audio.playMenuMusic();
+      } else {
+        game.audio.toggleSound();
+      }
       syncAudioUI();
     });
   }

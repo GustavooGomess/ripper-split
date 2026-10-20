@@ -11,6 +11,76 @@
   <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
+  <!-- ═══════════════ 8-BIT / 16-BIT PIXEL ART ICONS SPRITE ═══════════════ -->
+  <svg style="display: none;" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <!-- Sound (16x16) -->
+      <g id="px-sound" viewBox="0 0 16 16">
+        <path d="M2,6 h3 v4 h-3 z M5,5 h1 v6 h-1 z M6,4 h1 v8 h-1 z M7,3 h2 v10 h-2 z M11,5 h1 v1 h-1 z M12,6 h1 v4 h-1 z M11,10 h1 v1 h-1 z M14,3 h1 v2 h-1 z M15,5 h1 v6 h-1 z M14,11 h1 v2 h-1 z"/>
+      </g>
+      <!-- Sound Muted (16x16) -->
+      <g id="px-sound-mute" viewBox="0 0 16 16">
+        <path d="M2,6 h3 v4 h-3 z M5,5 h1 v6 h-1 z M6,4 h1 v8 h-1 z M7,3 h2 v10 h-2 z M11,5 h1 v1 h-1 z M15,5 h1 v1 h-1 z M12,6 h1 v1 h-1 z M14,6 h1 v1 h-1 z M13,7 h1 v2 h-1 z M12,9 h1 v1 h-1 z M14,9 h1 v1 h-1 z M11,10 h1 v1 h-1 z M15,10 h1 v1 h-1 z"/>
+      </g>
+      <!-- CRT TV / Monitor (16x16) -->
+      <g id="px-crt" viewBox="0 0 16 16">
+        <path d="M3,1 h1 v1 h-1 z M4,2 h1 v1 h-1 z M5,3 h1 v1 h-1 z M12,1 h1 v1 h-1 z M11,2 h1 v1 h-1 z M10,3 h1 v1 h-1 z M1,4 h14 v9 h-14 z M3,6 h7 v5 h-7 z M12,6 h1 v1 h-1 z M12,9 h1 v1 h-1 z M3,13 h2 v1 h-2 z M11,13 h2 v1 h-2 z" fill-rule="evenodd"/>
+      </g>
+      <!-- Particles / Stars (16x16) -->
+      <g id="px-particles" viewBox="0 0 16 16">
+        <path d="M6,1 h2 v2 h-2 z M6,9 h2 v2 h-2 z M2,5 h2 v2 h-2 z M10,5 h2 v2 h-2 z M5,3 h4 v6 h-4 z M4,4 h6 v4 h-6 z M12,1 h1 v1 h-1 z M11,2 h3 v1 h-3 z M12,3 h1 v1 h-1 z M13,11 h1 v1 h-1 z M12,12 h3 v1 h-3 z M13,13 h1 v1 h-1 z M2,12 h2 v2 h-2 z"/>
+      </g>
+      <!-- Difficulty / Lightning Bolt (16x16) -->
+      <g id="px-diff" viewBox="0 0 16 16">
+        <path d="M8,1 h3 v2 h-3 z M7,3 h3 v2 h-3 z M6,5 h4 v2 h-4 z M3,7 h9 v2 h-9 z M5,9 h4 v2 h-4 z M6,11 h3 v2 h-3 z M7,13 h2 v2 h-2 z"/>
+      </g>
+      <!-- Gear / Settings (16x16) -->
+      <g id="px-gear" viewBox="0 0 16 16">
+        <path d="M6,1 h4 v2 h-4 z M6,13 h4 v2 h-4 z M1,6 h2 v4 h-2 z M13,6 h2 v4 h-2 z M3,3 h2 v2 h-2 z M11,3 h2 v2 h-2 z M3,11 h2 v2 h-2 z M11,11 h2 v2 h-2 z M4,4 h8 v8 h-8 z M6,6 h4 v4 h-4 z" fill-rule="evenodd"/>
+      </g>
+      <!-- Credits / Floppy Disk (16x16) -->
+      <g id="px-credits" viewBox="0 0 16 16">
+        <path d="M2,2 h11 v1 h1 v11 h-12 z M4,3 h7 v4 h-7 z M5,4 h2 v3 h-2 z M4,9 h8 v4 h-8 z" fill-rule="evenodd"/>
+      </g>
+      <!-- Play (16x16) -->
+      <g id="px-play" viewBox="0 0 16 16">
+        <path d="M3,2 h2 v12 h-2 z M5,3 h2 v10 h-2 z M7,4 h2 v8 h-2 z M9,5 h2 v6 h-2 z M11,6 h2 v4 h-2 z M13,7 h1 v2 h-1 z"/>
+      </g>
+      <!-- Pause (16x16) -->
+      <g id="px-pause" viewBox="0 0 16 16">
+        <path d="M3,2 h3 v12 h-3 z M10,2 h3 v12 h-3 z"/>
+      </g>
+      <!-- Home / Castle (16x16) -->
+      <g id="px-home" viewBox="0 0 16 16">
+        <path d="M7,2 h2 v1 h-2 z M6,3 h4 v1 h-4 z M5,4 h6 v1 h-6 z M4,5 h8 v1 h-8 z M3,6 h10 v1 h-10 z M2,7 h12 v1 h-12 z M3,8 h10 v7 h-10 z M6,10 h4 v5 h-4 z" fill-rule="evenodd"/>
+      </g>
+      <!-- Close 'X' (16x16) -->
+      <g id="px-close" viewBox="0 0 16 16">
+        <path d="M2,2 h2 v2 h-2 z M12,2 h2 v2 h-2 z M4,4 h2 v2 h-2 z M10,4 h2 v2 h-2 z M6,6 h4 v4 h-4 z M4,10 h2 v2 h-2 z M10,10 h2 v2 h-2 z M2,12 h2 v2 h-2 z M12,12 h2 v2 h-2 z"/>
+      </g>
+      <!-- Lock (16x16) -->
+      <g id="px-lock" viewBox="0 0 16 16">
+        <path d="M5,2 h6 v2 h-6 z M4,3 h2 v4 h-2 z M10,3 h2 v4 h-2 z M3,7 h10 v8 h-10 z M7,9 h2 v3 h-2 z" fill-rule="evenodd"/>
+      </g>
+      <!-- Unlock (16x16) -->
+      <g id="px-unlock" viewBox="0 0 16 16">
+        <path d="M5,1 h6 v2 h-6 z M4,2 h2 v4 h-2 z M10,1 h2 v3 h-2 z M3,7 h10 v8 h-10 z M7,9 h2 v3 h-2 z" fill-rule="evenodd"/>
+      </g>
+      <!-- Trophy (16x16) -->
+      <g id="px-trophy" viewBox="0 0 16 16">
+        <path d="M3,2 h10 v2 h-10 z M4,4 h8 v3 h-8 z M5,7 h6 v2 h-6 z M6,9 h4 v1 h-4 z M7,10 h2 v2 h-2 z M5,12 h6 v2 h-6 z M2,4 h1 v3 h-1 z M13,4 h1 v3 h-1 z"/>
+      </g>
+      <!-- Lightbulb / Hint (16x16) -->
+      <g id="px-hint" viewBox="0 0 16 16">
+        <path d="M5,2 h6 v2 h-6 z M4,4 h8 v4 h-8 z M5,8 h6 v2 h-6 z M6,10 h4 v2 h-4 z M6,12 h4 v1 h-4 z M7,13 h2 v1 h-2 z M7,0 h2 v1 h-2 z M1,6 h2 v1 h-2 z M13,6 h2 v1 h-2 z"/>
+      </g>
+      <!-- Restart (16x16) -->
+      <g id="px-restart" viewBox="0 0 16 16">
+        <path d="M5,2 h6 v2 h-6 z M11,4 h2 v4 h-2 z M5,12 h6 v2 h-6 z M3,8 h2 v4 h-2 z M1,6 h4 v4 h-4 z"/>
+      </g>
+    </defs>
+  </svg>
+
   <div id="game-container">
     <!-- CRT Overlay -->
     <div id="crt-overlay"></div>
@@ -40,23 +110,23 @@
         <nav class="title-menu">
           <button id="start-btn" class="menu-btn menu-btn--primary">
             <span class="menu-btn-glitch"></span>
-            <span class="menu-btn-icon">▶</span>
+            <span class="menu-btn-icon"><svg class="pixel-icon"><use href="#px-play"></use></svg></span>
             <span class="menu-btn-text">INICIAR JOGO</span>
             <span class="menu-btn-arrow">→</span>
           </button>
           <button id="settings-btn" class="menu-btn menu-btn--secondary">
-            <span class="menu-btn-icon">⚙</span>
+            <span class="menu-btn-icon"><svg class="pixel-icon"><use href="#px-gear"></use></svg></span>
             <span class="menu-btn-text">CONFIGURAÇÕES</span>
           </button>
           <button id="credits-btn" class="menu-btn menu-btn--secondary">
-            <span class="menu-btn-icon">◈</span>
+            <span class="menu-btn-icon"><svg class="pixel-icon"><use href="#px-credits"></use></svg></span>
             <span class="menu-btn-text">CRÉDITOS</span>
           </button>
         </nav>
 
         <button id="title-audio-btn" class="title-audio-pill" title="Clique para alternar o som">
           <span class="audio-pulse-indicator"></span>
-          <span class="audio-pill-icon" id="title-audio-icon">🔊</span>
+          <span class="audio-pill-icon" id="title-audio-icon"><svg class="pixel-icon"><use href="#px-sound"></use></svg></span>
           <span class="audio-pill-label" id="title-audio-label">MÚSICA: ROCCOW · PARTY'S CANCELLED</span>
         </button>
 
@@ -68,33 +138,50 @@
     <div id="settings-modal" class="modal-overlay">
       <div class="modal-box">
         <div class="modal-header">
-          <span class="modal-title">⚙ CONFIGURAÇÕES</span>
-          <button id="settings-close" class="modal-close">✕</button>
+          <span class="modal-title">
+            <svg class="pixel-icon"><use href="#px-gear"></use></svg>
+            CONFIGURAÇÕES
+          </span>
+          <button id="settings-close" class="modal-close" title="Fechar">
+            <svg class="pixel-icon"><use href="#px-close"></use></svg>
+          </button>
         </div>
         <div class="modal-body">
           <div class="setting-row">
-            <label class="setting-label">🔊 SOM</label>
+            <label class="setting-label">
+              <svg class="pixel-icon"><use href="#px-sound"></use></svg>
+              <span>SOM</span>
+            </label>
             <div class="setting-toggle" id="sound-toggle" data-on="true">
               <div class="toggle-track"><div class="toggle-thumb"></div></div>
               <span class="toggle-label">LIGADO</span>
             </div>
           </div>
           <div class="setting-row">
-            <label class="setting-label">📺 EFEITO CRT</label>
+            <label class="setting-label">
+              <svg class="pixel-icon"><use href="#px-crt"></use></svg>
+              <span>EFEITO CRT</span>
+            </label>
             <div class="setting-toggle" id="crt-toggle" data-on="true">
               <div class="toggle-track"><div class="toggle-thumb"></div></div>
               <span class="toggle-label">LIGADO</span>
             </div>
           </div>
           <div class="setting-row">
-            <label class="setting-label">✨ PARTÍCULAS</label>
+            <label class="setting-label">
+              <svg class="pixel-icon"><use href="#px-particles"></use></svg>
+              <span>PARTÍCULAS</span>
+            </label>
             <div class="setting-toggle" id="particles-toggle" data-on="true">
               <div class="toggle-track"><div class="toggle-thumb"></div></div>
               <span class="toggle-label">LIGADO</span>
             </div>
           </div>
           <div class="setting-row">
-            <label class="setting-label">⚡ DIFICULDADE</label>
+            <label class="setting-label">
+              <svg class="pixel-icon"><use href="#px-diff"></use></svg>
+              <span>DIFICULDADE</span>
+            </label>
             <div class="setting-select">
               <button class="diff-btn active" data-diff="normal">NORMAL</button>
               <button class="diff-btn" data-diff="hard">DIFÍCIL</button>
@@ -108,8 +195,13 @@
     <div id="credits-modal" class="modal-overlay">
       <div class="modal-box">
         <div class="modal-header">
-          <span class="modal-title">◈ CRÉDITOS</span>
-          <button id="credits-close" class="modal-close">✕</button>
+          <span class="modal-title">
+            <svg class="pixel-icon"><use href="#px-credits"></use></svg>
+            CRÉDITOS
+          </span>
+          <button id="credits-close" class="modal-close" title="Fechar">
+            <svg class="pixel-icon"><use href="#px-close"></use></svg>
+          </button>
         </div>
         <div class="modal-body credits-body">
           <div class="credit-block">
@@ -183,7 +275,7 @@
             <span id="score-value" class="hud-value">0</span>
           </div>
           <button id="pause-btn" class="hud-pause-btn" title="Pausar (ESC)">
-            <span class="pause-icon">⏸</span>
+            <span class="pause-icon"><svg class="pixel-icon"><use href="#px-pause"></use></svg></span>
           </button>
         </div>
       </div>
@@ -206,7 +298,7 @@
             <div class="door-panel left-panel"></div>
             <div class="door-panel right-panel"></div>
             <div class="door-lock">
-              <div class="lock-icon">🔒</div>
+              <div class="lock-icon"><svg class="pixel-icon"><use href="#px-lock"></use></svg></div>
             </div>
           </div>
           <div class="door-light"></div>
@@ -248,7 +340,7 @@
       <!-- Success Overlay -->
       <div id="success-overlay" class="overlay">
         <div class="success-content">
-          <div class="success-icon">🔓</div>
+          <div class="success-icon"><svg class="pixel-icon"><use href="#px-unlock"></use></svg></div>
           <h2>HASH QUEBRADA!</h2>
           <p id="success-message"></p>
           <div class="success-score" id="success-score-add"></div>
@@ -258,7 +350,7 @@
       <!-- Wrong Answer Overlay -->
       <div id="wrong-overlay" class="overlay">
         <div class="wrong-content">
-          <div class="wrong-icon">✖</div>
+          <div class="wrong-icon"><svg class="pixel-icon"><use href="#px-close"></use></svg></div>
           <p>Senha incorreta!</p>
         </div>
       </div>
@@ -270,7 +362,7 @@
           <div class="pause-scanlines"></div>
 
           <div class="pause-header">
-            <div class="pause-icon-big">⏸</div>
+            <div class="pause-icon-big"><svg class="pixel-icon"><use href="#px-pause"></use></svg></div>
             <h2 class="pause-title">PAUSADO</h2>
             <div class="pause-subtitle">// jogo interrompido</div>
           </div>
@@ -289,15 +381,15 @@
 
           <nav class="pause-menu">
             <button id="pause-resume-btn" class="pause-btn pause-btn--primary">
-              <span class="pause-btn-icon">▶</span>
+              <span class="pause-btn-icon"><svg class="pixel-icon"><use href="#px-play"></use></svg></span>
               <span>CONTINUAR</span>
             </button>
             <button id="pause-sound-btn" class="pause-btn pause-btn--secondary">
-              <span class="pause-btn-icon" id="pause-sound-icon">🔊</span>
+              <span class="pause-btn-icon" id="pause-sound-icon"><svg class="pixel-icon"><use href="#px-sound"></use></svg></span>
               <span id="pause-sound-label">SOM: LIGADO</span>
             </button>
             <button id="pause-menu-btn" class="pause-btn pause-btn--secondary">
-              <span class="pause-btn-icon">⌂</span>
+              <span class="pause-btn-icon"><svg class="pixel-icon"><use href="#px-home"></use></svg></span>
               <span>MENU PRINCIPAL</span>
             </button>
           </nav>
@@ -311,7 +403,7 @@
     <div id="victory-screen" class="screen">
       <canvas id="confetti-canvas"></canvas>
       <div class="victory-content">
-        <div class="victory-icon">🏆</div>
+        <div class="victory-icon"><svg class="pixel-icon"><use href="#px-trophy"></use></svg></div>
         <h1 class="victory-title">LIBERDADE!</h1>
         <p class="victory-subtitle">Você escapou da masmorra do John!</p>
         <div class="victory-stats">
@@ -329,7 +421,7 @@
           </div>
         </div>
         <button id="restart-btn" class="btn-primary">
-          <span class="btn-icon">↺</span> JOGAR NOVAMENTE
+          <span class="btn-icon"><svg class="pixel-icon"><use href="#px-restart"></use></svg></span> JOGAR NOVAMENTE
         </button>
       </div>
     </div>

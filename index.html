@@ -26,41 +26,6 @@
       <!-- Floating hex decorations -->
       <div class="hex-deco" id="hex-deco-container"></div>
 
-      <!-- Left side: lore panel -->
-      <div class="title-lore-panel">
-        <div class="lore-terminal">
-          <div class="lore-terminal-header">
-            <span class="terminal-dot red"></span>
-            <span class="terminal-dot yellow"></span>
-            <span class="terminal-dot green"></span>
-            <span class="terminal-title">john@masmorra:~$</span>
-          </div>
-          <div class="lore-terminal-body">
-            <p class="lore-line"><span class="lore-prompt">$</span> cat /etc/dungeon/status.txt</p>
-            <p class="lore-line lore-output">PRISIONEIRO DETECTADO...</p>
-            <p class="lore-line lore-output">CRIPTOGRAFIA ATIVA: SHA256 / MD5 / AES</p>
-            <p class="lore-line lore-output">TENTATIVAS RESTANTES: <span class="lore-warn">3</span></p>
-            <p class="lore-line"><span class="lore-prompt">$</span> sudo escape --force<span class="lore-cursor">█</span></p>
-          </div>
-        </div>
-        <div class="lore-stats">
-          <div class="lore-stat">
-            <span class="lore-stat-val">5</span>
-            <span class="lore-stat-lbl">FASES</span>
-          </div>
-          <div class="lore-stat-divider"></div>
-          <div class="lore-stat">
-            <span class="lore-stat-val">∞</span>
-            <span class="lore-stat-lbl">HASHES</span>
-          </div>
-          <div class="lore-stat-divider"></div>
-          <div class="lore-stat">
-            <span class="lore-stat-val">01</span>
-            <span class="lore-stat-lbl">SAÍDA</span>
-          </div>
-        </div>
-      </div>
-
       <!-- Center: main menu -->
       <div class="title-content">
         <div class="title-logo">
@@ -96,29 +61,6 @@
         </button>
 
         <p class="credits-small">Um jogo sobre criptografia e sobrevivência</p>
-      </div>
-
-      <!-- Right side: preview -->
-      <div class="title-preview-panel">
-        <div class="preview-dungeon">
-          <div class="preview-title">PRÉVIA DA MASMORRA</div>
-          <div class="preview-room">
-            <div class="preview-wall preview-wall--top"></div>
-            <div class="preview-wall preview-wall--bottom"></div>
-            <div class="preview-door">
-              <div class="preview-door-icon">🚪</div>
-              <div class="preview-door-lock">🔒</div>
-            </div>
-            <div class="preview-torch preview-torch--left"><div class="preview-flame"></div></div>
-            <div class="preview-torch preview-torch--right"><div class="preview-flame"></div></div>
-            <div class="preview-char">🧙</div>
-          </div>
-          <div class="preview-hash-stream">
-            <div class="hash-stream-line" id="hsl1"></div>
-            <div class="hash-stream-line" id="hsl2"></div>
-            <div class="hash-stream-line" id="hsl3"></div>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -240,7 +182,7 @@
             <span class="hud-label">SCORE</span>
             <span id="score-value" class="hud-value">0</span>
           </div>
-          <button id="pause-btn" class="hud-pause-btn" title="Pausar (P)">
+          <button id="pause-btn" class="hud-pause-btn" title="Pausar (ESC)">
             <span class="pause-icon">⏸</span>
           </button>
         </div>
@@ -360,7 +302,7 @@
             </button>
           </nav>
 
-          <p class="pause-hint">Pressione <kbd>P</kbd> ou <kbd>ESC</kbd> para continuar</p>
+          <p class="pause-hint">Pressione <kbd>ESC</kbd> para continuar</p>
         </div>
       </div>
     </div>

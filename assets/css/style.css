@@ -123,10 +123,11 @@ html, body {
 
 #title-screen {
   background: var(--bg-darkest);
-  flex-direction: row;
-  align-items: stretch;
-  justify-content: space-between;
-  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
 }
 
 /* ── Background layers ── */
@@ -312,7 +313,8 @@ html, body {
 .title-content {
   position: relative;
   z-index: 10;
-  flex: 1;
+  max-width: 600px;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;

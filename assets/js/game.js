@@ -1421,17 +1421,6 @@ function init() {
     }
   }
 
-  // ── Hash stream lines ─────────────────────────────────────
-  const streamHashes = [
-    '5f4dcc3b5aa765d61d8327deb882cf99 · a665a45920422f9d417e4867efdc4fb8 · 2bb80d537b1da3e38bd30361aa855686 · e10adc3949ba59abbe56e057f20f883e · ',
-    '25f9e794323b453885f5181f1b624d0b · d8578edf8458ce06fbc5bb76a58c5ca4 · 5f4dcc3b5aa765d61d8327deb882cf99 · b14a7b8059d9c055954c92674ce60032 · ',
-    'aab3238922bcc25a6f606eb525ffdc56 · c4ca4238a0b923820dcc509a6f75849b · eccbc87e4b5ce2fe28308fd9f2a7baf3 · ',
-  ];
-  ['hsl1','hsl2','hsl3'].forEach((id, i) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = streamHashes[i] + streamHashes[i]; // duplicate for seamless loop
-  });
-
   // ── Modals ────────────────────────────────────────────────
   function openModal(id) {
     document.getElementById(id).classList.add('active');
@@ -1605,9 +1594,9 @@ function init() {
     restartGame();
   });
 
-  // Keyboard shortcut: P or ESC
+  // Keyboard shortcut: ESC to pause / resume
   document.addEventListener('keydown', e => {
-    if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+    if (e.key === 'Escape') {
       // ESC closes modals first if open
       const settingsOpen = document.getElementById('settings-modal').classList.contains('active');
       const creditsOpen  = document.getElementById('credits-modal').classList.contains('active');

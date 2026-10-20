@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fira+Code:wght@400;600;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
   <div id="game-container">
@@ -17,21 +17,185 @@
 
     <!-- ═══════════════ TITLE SCREEN ═══════════════ -->
     <div id="title-screen" class="screen active">
+      <!-- Background layers -->
       <canvas id="matrix-canvas"></canvas>
+      <canvas id="particles-canvas"></canvas>
+      <div class="title-scanlines"></div>
+      <div class="title-vignette"></div>
+
+      <!-- Floating hex decorations -->
+      <div class="hex-deco" id="hex-deco-container"></div>
+
+      <!-- Left side: lore panel -->
+      <div class="title-lore-panel">
+        <div class="lore-terminal">
+          <div class="lore-terminal-header">
+            <span class="terminal-dot red"></span>
+            <span class="terminal-dot yellow"></span>
+            <span class="terminal-dot green"></span>
+            <span class="terminal-title">john@masmorra:~$</span>
+          </div>
+          <div class="lore-terminal-body">
+            <p class="lore-line"><span class="lore-prompt">$</span> cat /etc/dungeon/status.txt</p>
+            <p class="lore-line lore-output">PRISIONEIRO DETECTADO...</p>
+            <p class="lore-line lore-output">CRIPTOGRAFIA ATIVA: SHA256 / MD5 / AES</p>
+            <p class="lore-line lore-output">TENTATIVAS RESTANTES: <span class="lore-warn">3</span></p>
+            <p class="lore-line"><span class="lore-prompt">$</span> sudo escape --force<span class="lore-cursor">█</span></p>
+          </div>
+        </div>
+        <div class="lore-stats">
+          <div class="lore-stat">
+            <span class="lore-stat-val">5</span>
+            <span class="lore-stat-lbl">FASES</span>
+          </div>
+          <div class="lore-stat-divider"></div>
+          <div class="lore-stat">
+            <span class="lore-stat-val">∞</span>
+            <span class="lore-stat-lbl">HASHES</span>
+          </div>
+          <div class="lore-stat-divider"></div>
+          <div class="lore-stat">
+            <span class="lore-stat-val">01</span>
+            <span class="lore-stat-lbl">SAÍDA</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center: main menu -->
       <div class="title-content">
         <div class="title-logo">
-          <h1 id="game-title">
+          <div class="title-badge">v1.0 · INDIE · 2D</div>
+          <h1 id="game-title" class="glitch-title" data-text="RIPPERSPLIT">
             <span class="title-ripper">RIPPER</span><span class="title-split">SPLIT</span>
           </h1>
           <div class="title-underline"></div>
+          <p class="tagline">Quebre as hashes. Escape da masmorra.</p>
         </div>
-        <p class="tagline">Quebre as hashes. Escape da masmorra.</p>
-        <div class="title-buttons">
-          <button id="start-btn" class="btn-primary">
-            <span class="btn-icon">▶</span> INICIAR
+
+        <nav class="title-menu">
+          <button id="start-btn" class="menu-btn menu-btn--primary">
+            <span class="menu-btn-glitch"></span>
+            <span class="menu-btn-icon">▶</span>
+            <span class="menu-btn-text">INICIAR JOGO</span>
+            <span class="menu-btn-arrow">→</span>
           </button>
+          <button id="settings-btn" class="menu-btn menu-btn--secondary">
+            <span class="menu-btn-icon">⚙</span>
+            <span class="menu-btn-text">CONFIGURAÇÕES</span>
+          </button>
+          <button id="credits-btn" class="menu-btn menu-btn--secondary">
+            <span class="menu-btn-icon">◈</span>
+            <span class="menu-btn-text">CRÉDITOS</span>
+          </button>
+        </nav>
+
+        <button id="title-audio-btn" class="title-audio-pill" title="Clique para alternar o som">
+          <span class="audio-pulse-indicator"></span>
+          <span class="audio-pill-icon" id="title-audio-icon">🔊</span>
+          <span class="audio-pill-label" id="title-audio-label">MÚSICA: ROCCOW · PARTY'S CANCELLED</span>
+        </button>
+
+        <p class="credits-small">Um jogo sobre criptografia e sobrevivência</p>
+      </div>
+
+      <!-- Right side: preview -->
+      <div class="title-preview-panel">
+        <div class="preview-dungeon">
+          <div class="preview-title">PRÉVIA DA MASMORRA</div>
+          <div class="preview-room">
+            <div class="preview-wall preview-wall--top"></div>
+            <div class="preview-wall preview-wall--bottom"></div>
+            <div class="preview-door">
+              <div class="preview-door-icon">🚪</div>
+              <div class="preview-door-lock">🔒</div>
+            </div>
+            <div class="preview-torch preview-torch--left"><div class="preview-flame"></div></div>
+            <div class="preview-torch preview-torch--right"><div class="preview-flame"></div></div>
+            <div class="preview-char">🧙</div>
+          </div>
+          <div class="preview-hash-stream">
+            <div class="hash-stream-line" id="hsl1"></div>
+            <div class="hash-stream-line" id="hsl2"></div>
+            <div class="hash-stream-line" id="hsl3"></div>
+          </div>
         </div>
-        <p class="credits">Um jogo sobre criptografia e sobrevivência</p>
+      </div>
+    </div>
+
+    <!-- ═══════════════ SETTINGS MODAL ═══════════════ -->
+    <div id="settings-modal" class="modal-overlay">
+      <div class="modal-box">
+        <div class="modal-header">
+          <span class="modal-title">⚙ CONFIGURAÇÕES</span>
+          <button id="settings-close" class="modal-close">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="setting-row">
+            <label class="setting-label">🔊 SOM</label>
+            <div class="setting-toggle" id="sound-toggle" data-on="true">
+              <div class="toggle-track"><div class="toggle-thumb"></div></div>
+              <span class="toggle-label">LIGADO</span>
+            </div>
+          </div>
+          <div class="setting-row">
+            <label class="setting-label">📺 EFEITO CRT</label>
+            <div class="setting-toggle" id="crt-toggle" data-on="true">
+              <div class="toggle-track"><div class="toggle-thumb"></div></div>
+              <span class="toggle-label">LIGADO</span>
+            </div>
+          </div>
+          <div class="setting-row">
+            <label class="setting-label">✨ PARTÍCULAS</label>
+            <div class="setting-toggle" id="particles-toggle" data-on="true">
+              <div class="toggle-track"><div class="toggle-thumb"></div></div>
+              <span class="toggle-label">LIGADO</span>
+            </div>
+          </div>
+          <div class="setting-row">
+            <label class="setting-label">⚡ DIFICULDADE</label>
+            <div class="setting-select">
+              <button class="diff-btn active" data-diff="normal">NORMAL</button>
+              <button class="diff-btn" data-diff="hard">DIFÍCIL</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ CREDITS MODAL ═══════════════ -->
+    <div id="credits-modal" class="modal-overlay">
+      <div class="modal-box">
+        <div class="modal-header">
+          <span class="modal-title">◈ CRÉDITOS</span>
+          <button id="credits-close" class="modal-close">✕</button>
+        </div>
+        <div class="modal-body credits-body">
+          <div class="credit-block">
+            <span class="credit-role">DESENVOLVEDOR</span>
+            <span class="credit-name">GustavooGomess</span>
+          </div>
+          <div class="credit-block">
+            <span class="credit-role">MÚSICA DO MENU</span>
+            <span class="credit-name">RoccoW — Party's Cancelled (Chiptune)</span>
+          </div>
+          <div class="credit-block">
+            <span class="credit-role">TRILHA DA MASMORRA</span>
+            <span class="credit-name">2D Chiptune Synth Sequencer</span>
+          </div>
+          <div class="credit-block">
+            <span class="credit-role">CONCEITO</span>
+            <span class="credit-name">Hash-Cracking Dungeon Escape</span>
+          </div>
+          <div class="credit-block">
+            <span class="credit-role">TECNOLOGIA</span>
+            <span class="credit-name">HTML · CSS · JavaScript (Web Audio API)</span>
+          </div>
+          <div class="credit-block">
+            <span class="credit-role">FONTE</span>
+            <span class="credit-name">Press Start 2P · Fira Code</span>
+          </div>
+          <div class="credit-version">RipperSplit v1.0 — 2026</div>
+        </div>
       </div>
     </div>
 
@@ -76,6 +240,9 @@
             <span class="hud-label">SCORE</span>
             <span id="score-value" class="hud-value">0</span>
           </div>
+          <button id="pause-btn" class="hud-pause-btn" title="Pausar (P)">
+            <span class="pause-icon">⏸</span>
+          </button>
         </div>
       </div>
 
@@ -153,6 +320,49 @@
           <p>Senha incorreta!</p>
         </div>
       </div>
+
+      <!-- ═══════════════ PAUSE OVERLAY ═══════════════ -->
+      <div id="pause-overlay" class="overlay">
+        <div class="pause-content">
+          <!-- Scanlines inside pause -->
+          <div class="pause-scanlines"></div>
+
+          <div class="pause-header">
+            <div class="pause-icon-big">⏸</div>
+            <h2 class="pause-title">PAUSADO</h2>
+            <div class="pause-subtitle">// jogo interrompido</div>
+          </div>
+
+          <div class="pause-info">
+            <div class="pause-stat">
+              <span class="pause-stat-lbl">FASE</span>
+              <span class="pause-stat-val" id="pause-phase">1/5</span>
+            </div>
+            <div class="pause-stat-divider"></div>
+            <div class="pause-stat">
+              <span class="pause-stat-lbl">SCORE</span>
+              <span class="pause-stat-val" id="pause-score">0</span>
+            </div>
+          </div>
+
+          <nav class="pause-menu">
+            <button id="pause-resume-btn" class="pause-btn pause-btn--primary">
+              <span class="pause-btn-icon">▶</span>
+              <span>CONTINUAR</span>
+            </button>
+            <button id="pause-sound-btn" class="pause-btn pause-btn--secondary">
+              <span class="pause-btn-icon" id="pause-sound-icon">🔊</span>
+              <span id="pause-sound-label">SOM: LIGADO</span>
+            </button>
+            <button id="pause-menu-btn" class="pause-btn pause-btn--secondary">
+              <span class="pause-btn-icon">⌂</span>
+              <span>MENU PRINCIPAL</span>
+            </button>
+          </nav>
+
+          <p class="pause-hint">Pressione <kbd>P</kbd> ou <kbd>ESC</kbd> para continuar</p>
+        </div>
+      </div>
     </div>
 
     <!-- ═══════════════ VICTORY SCREEN ═══════════════ -->
@@ -183,6 +393,6 @@
     </div>
   </div>
 
-  <script src="game.js"></script>
+  <script src="assets/js/game.js"></script>
 </body>
 </html>

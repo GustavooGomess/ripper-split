@@ -92,21 +92,332 @@ const MD5 = (() => {
   return { hash: hexMD5 };
 })();
 
-// ─── Audio System (Web Audio API) ───
+// ─── Audio System (Web Audio API + Chiptune Sequencer + Menu Music) ───
 class AudioSystem {
   constructor() {
     this.ctx = null;
     this.enabled = true;
+    this.currentTrack = 'none'; // 'none' | 'menu' | 'dungeon'
+    this.isPaused = false;
+
+    // Menu music audio element (RoccoW - Party's Cancelled)
+    this.menuAudio = null;
+    try {
+      this.menuAudio = new Audio('assets/audio/menu-theme.mp3');
+      this.menuAudio.loop = true;
+      this.menuAudio.volume = 0.28;
+      this.menuAudio.preload = 'auto';
+    } catch (e) {
+      this.menuAudio = null;
+    }
+
+    // Dungeon 2D chiptune tracker nodes
+    this.bgmGain = null;
+    this.bgmFilter = null;
+    this.seqTimer = null;
+    this.seqStep = 0;
+    this.nextStepTime = 0;
+    this.tempo = 124; // BPM
+    this.stepInterval = 60 / (this.tempo * 4); // 16th note ~0.121s
+    this.noiseBuffer = null;
   }
 
   init() {
+    if (this.ctx && this.ctx.state !== 'closed') {
+      if (this.ctx.state === 'suspended') {
+        this.ctx.resume();
+      }
+      return;
+    }
     try {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+      // Dungeon BGM master bus (Filter -> Gain -> Destination)
+      this.bgmFilter = this.ctx.createBiquadFilter();
+      this.bgmFilter.type = 'lowpass';
+      this.bgmFilter.frequency.setValueAtTime(3600, this.ctx.currentTime);
+      this.bgmFilter.Q.setValueAtTime(1.5, this.ctx.currentTime);
+
+      this.bgmGain = this.ctx.createGain();
+      this.bgmGain.gain.setValueAtTime(0.14, this.ctx.currentTime);
+
+      this.bgmFilter.connect(this.bgmGain);
+      this.bgmGain.connect(this.ctx.destination);
+
+      // Create white noise buffer for 8-bit drum hits
+      this.initNoiseBuffer();
     } catch (e) {
       this.enabled = false;
     }
   }
 
+  initNoiseBuffer() {
+    if (!this.ctx) return;
+    const bufferSize = this.ctx.sampleRate * 1; // 1 second of noise
+    this.noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = this.noiseBuffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+  }
+
+  playMenuMusic() {
+    this.currentTrack = 'menu';
+    this.stopDungeonMusic();
+    if (!this.enabled || !this.menuAudio) return;
+
+    this.menuAudio.volume = 0.28;
+    const playPromise = this.menuAudio.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(() => {
+        // Will retry automatically on first user click/touch
+      });
+    }
+  }
+
+  stopMenuMusic() {
+    if (this.menuAudio) {
+      try {
+        this.menuAudio.pause();
+      } catch (e) {}
+    }
+  }
+
+  // ── 2D Chiptune Dungeon Sequencer ──
+  startDungeonMusic() {
+    this.init();
+    this.stopMenuMusic();
+    this.currentTrack = 'dungeon';
+    this.isPaused = false;
+
+    if (!this.enabled || !this.ctx) return;
+
+    // Reset filter and gain
+    this.bgmFilter.frequency.setValueAtTime(3600, this.ctx.currentTime);
+    this.bgmGain.gain.setValueAtTime(0.14, this.ctx.currentTime);
+
+    if (this.seqTimer) {
+      clearInterval(this.seqTimer);
+      this.seqTimer = null;
+    }
+
+    this.seqStep = 0;
+    this.nextStepTime = this.ctx.currentTime + 0.05;
+
+    // Lookahead scheduler loop (every 25ms, schedule notes for the next 100ms)
+    this.seqTimer = setInterval(() => {
+      if (this.isPaused || !this.enabled || !this.ctx) return;
+      while (this.nextStepTime < this.ctx.currentTime + 0.1) {
+        this.scheduleSeqStep(this.seqStep, this.nextStepTime);
+        this.nextStepTime += this.stepInterval;
+        this.seqStep = (this.seqStep + 1) % 32;
+      }
+    }, 25);
+  }
+
+  stopDungeonMusic() {
+    if (this.seqTimer) {
+      clearInterval(this.seqTimer);
+      this.seqTimer = null;
+    }
+    if (this.bgmGain && this.ctx) {
+      this.bgmGain.gain.setValueAtTime(0, this.ctx.currentTime);
+    }
+  }
+
+  pauseDungeonMusic() {
+    this.isPaused = true;
+    if (this.bgmFilter && this.ctx && this.bgmGain) {
+      // Muffle lowpass + dim volume for authentic retro pause feeling
+      this.bgmFilter.frequency.setTargetAtTime(350, this.ctx.currentTime, 0.08);
+      this.bgmGain.gain.setTargetAtTime(0.04, this.ctx.currentTime, 0.08);
+    }
+  }
+
+  resumeDungeonMusic() {
+    this.isPaused = false;
+    if (this.bgmFilter && this.ctx && this.bgmGain && this.enabled) {
+      this.bgmFilter.frequency.setTargetAtTime(3600, this.ctx.currentTime, 0.12);
+      this.bgmGain.gain.setTargetAtTime(0.14, this.ctx.currentTime, 0.12);
+    }
+  }
+
+  scheduleSeqStep(step, time) {
+    if (!this.ctx || !this.bgmFilter) return;
+
+    // Note frequencies (D minor / cyber dungeon scale)
+    const N = {
+      D2: 73.42, F2: 87.31, G2: 98.00, A2: 110.00, C3: 130.81,
+      D3: 146.83, F3: 174.61, G3: 196.00, A3: 220.00, Bb3: 233.08, C4: 261.63,
+      D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00, A4: 440.00, Bb4: 466.16, C5: 523.25, D5: 587.33
+    };
+
+    // 1) Bass Voice (Triangle wave, deep 8-bit dungeon groove)
+    const bassSeq = [
+      N.D2, 0, N.D2, 0,  N.F2, 0, N.D2, 0,  N.G2, 0, N.D2, 0,  N.A2, 0, N.C3, 0,
+      N.D2, 0, N.D2, 0,  N.F2, 0, N.G2, 0,  N.A2, 0, N.Bb3, 0, N.A2, 0, N.F2, 0
+    ];
+    const bassNote = bassSeq[step];
+    if (bassNote) {
+      this.playBassNote(bassNote, time, this.stepInterval * 1.5);
+    }
+
+    // 2) Arpeggio Voice (Square wave, fast 16th-note retro chiptune arps)
+    const arpChords = [
+      [N.D3, N.F3, N.A3, N.D4],
+      [N.Bb3, N.D4, N.F4, N.Bb4],
+      [N.C4, N.E4, N.G4, N.C5],
+      [N.A3, N.C4, N.E4, N.A4]
+    ];
+    const chordIdx = Math.floor(step / 8);
+    const chord = arpChords[chordIdx];
+    const arpNote = chord[step % 4];
+    this.playArpNote(arpNote, time, this.stepInterval * 0.7);
+
+    // 3) Lead Melody Voice (Crisp square wave, expressive phrasing)
+    const leadSeq = [
+      // Bar 1 (0-7): D4, -, F4, G4, A4, -, -, C5
+      N.D4, 0, N.F4, N.G4, N.A4, 0, 0, N.C5,
+      // Bar 2 (8-15): A4, -, G4, -, F4, -, E4, -
+      N.A4, 0, N.G4, 0, N.F4, 0, N.E4, 0,
+      // Bar 3 (16-23): D4, -, F4, G4, A4, -, C5, D5
+      N.D4, 0, N.F4, N.G4, N.A4, 0, N.C5, N.D5,
+      // Bar 4 (24-31): C5, -, A4, -, G4, F4, E4, -
+      N.C5, 0, N.A4, 0, N.G4, N.F4, N.E4, 0
+    ];
+    const leadNote = leadSeq[step];
+    if (leadNote) {
+      this.playLeadNote(leadNote, time, this.stepInterval * 1.7);
+    }
+
+    // 4) 8-Bit Percussion: Hi-Hat & Snare
+    if (step % 2 === 1) {
+      this.playHiHat(time);
+    }
+    if (step % 8 === 4) {
+      this.playSnare(time);
+    }
+  }
+
+  playBassNote(freq, time, dur) {
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, time);
+      gain.gain.setValueAtTime(0.35, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + dur);
+      osc.connect(gain);
+      gain.connect(this.bgmFilter);
+      osc.start(time);
+      osc.stop(time + dur);
+    } catch (e) {}
+  }
+
+  playArpNote(freq, time, dur) {
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(freq, time);
+      gain.gain.setValueAtTime(0.06, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + dur);
+      osc.connect(gain);
+      gain.connect(this.bgmFilter);
+      osc.start(time);
+      osc.stop(time + dur);
+    } catch (e) {}
+  }
+
+  playLeadNote(freq, time, dur) {
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(freq, time);
+      gain.gain.setValueAtTime(0.18, time);
+      gain.gain.setValueAtTime(0.16, time + dur * 0.6);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + dur);
+      osc.connect(gain);
+      gain.connect(this.bgmFilter);
+      osc.start(time);
+      osc.stop(time + dur);
+    } catch (e) {}
+  }
+
+  playHiHat(time) {
+    if (!this.noiseBuffer) return;
+    try {
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = this.noiseBuffer;
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.setValueAtTime(7000, time);
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0.03, time);
+      gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.03);
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.bgmFilter);
+      noise.start(time);
+      noise.stop(time + 0.04);
+    } catch (e) {}
+  }
+
+  playSnare(time) {
+    if (!this.noiseBuffer) return;
+    try {
+      // Noise burst
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = this.noiseBuffer;
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(1400, time);
+      filter.Q.setValueAtTime(1.2, time);
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0.12, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.12);
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.bgmFilter);
+      noise.start(time);
+      noise.stop(time + 0.13);
+
+      // Low thump
+      const osc = this.ctx.createOscillator();
+      const oGain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(180, time);
+      osc.frequency.exponentialRampToValueAtTime(45, time + 0.09);
+      oGain.gain.setValueAtTime(0.2, time);
+      oGain.gain.exponentialRampToValueAtTime(0.001, time + 0.09);
+      osc.connect(oGain);
+      oGain.connect(this.bgmFilter);
+      osc.start(time);
+      osc.stop(time + 0.1);
+    } catch (e) {}
+  }
+
+  toggleSound() {
+    this.enabled = !this.enabled;
+    if (!this.enabled) {
+      this.stopMenuMusic();
+      if (this.bgmGain && this.ctx) {
+        this.bgmGain.gain.setValueAtTime(0, this.ctx.currentTime);
+      }
+    } else {
+      if (this.currentTrack === 'menu') {
+        this.playMenuMusic();
+      } else if (this.currentTrack === 'dungeon') {
+        if (this.bgmGain && this.ctx) {
+          this.bgmGain.gain.setValueAtTime(0.14, this.ctx.currentTime);
+        }
+      }
+    }
+    return this.enabled;
+  }
+
+  // ── Sound Effects ──
   playTone(freq, duration, type = 'square', volume = 0.1) {
     if (!this.enabled || !this.ctx) return;
     try {
@@ -120,7 +431,7 @@ class AudioSystem {
       gain.connect(this.ctx.destination);
       osc.start();
       osc.stop(this.ctx.currentTime + duration);
-    } catch (e) { /* ignore audio errors */ }
+    } catch (e) {}
   }
 
   keyPress() {
@@ -154,6 +465,18 @@ class AudioSystem {
 
   typewriter() {
     this.playTone(600 + Math.random() * 200, 0.02, 'square', 0.02);
+  }
+
+  pause() {
+    // Two descending tones — classic retro "pause" sound
+    this.playTone(660, 0.12, 'square', 0.07);
+    setTimeout(() => this.playTone(440, 0.18, 'square', 0.05), 90);
+  }
+
+  resume() {
+    // Two ascending tones — "resume" feeling
+    this.playTone(440, 0.10, 'square', 0.05);
+    setTimeout(() => this.playTone(660, 0.15, 'square', 0.07), 80);
   }
 }
 
@@ -289,6 +612,7 @@ const GameState = {
   STORY: 'story',
   PHASE_INTRO: 'phase_intro',
   PLAYING: 'playing',
+  PAUSED: 'paused',
   SUCCESS: 'success',
   VICTORY: 'victory'
 };
@@ -301,6 +625,7 @@ const game = {
   phaseHintsUsed: 0,
   maxHintsPerPhase: 3,
   testedWords: new Set(),
+  paused: false,
   audio: new AudioSystem()
 };
 
@@ -647,6 +972,9 @@ async function startPhase(phaseIndex) {
   game.phaseHintsUsed = 0;
   game.testedWords = new Set();
 
+  game.audio.stopMenuMusic();
+  game.audio.startDungeonMusic();
+
   const phase = PHASES[phaseIndex];
 
   // Compute MD5 hash if needed
@@ -958,6 +1286,7 @@ function useHint(phase) {
 // ─── Victory Screen ───
 function showVictory() {
   game.state = GameState.VICTORY;
+  game.audio.stopDungeonMusic();
   showScreen('victory');
 
   dom.victory.finalScore.textContent = game.score;
@@ -978,6 +1307,8 @@ function showVictory() {
 
 // ─── Restart ───
 function restartGame() {
+  game.audio.stopDungeonMusic();
+  game.audio.playMenuMusic();
   game.state = GameState.TITLE;
   game.currentPhase = 0;
   game.score = 0;
@@ -1008,6 +1339,9 @@ function init() {
   // Initialize audio on first interaction
   const initAudio = () => {
     game.audio.init();
+    if (game.state === GameState.TITLE && game.audio.enabled) {
+      game.audio.playMenuMusic();
+    }
     document.removeEventListener('click', initAudio);
     document.removeEventListener('keydown', initAudio);
   };
@@ -1019,6 +1353,184 @@ function init() {
   const matrix = new MatrixRain(matrixCanvas);
   matrix.start();
 
+  // ── Particles canvas ──────────────────────────────────────
+  const pCanvas = document.getElementById('particles-canvas');
+  if (pCanvas) {
+    const pCtx = pCanvas.getContext('2d');
+    const particles = [];
+    const PARTICLE_COUNT = 60;
+
+    function resizePC() {
+      pCanvas.width  = window.innerWidth;
+      pCanvas.height = window.innerHeight;
+    }
+    resizePC();
+    window.addEventListener('resize', resizePC);
+
+    const COLORS = ['rgba(0,255,65,', 'rgba(0,240,255,', 'rgba(180,77,255,'];
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push({
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        r: Math.random() * 1.8 + 0.3,
+        vx: (Math.random() - 0.5) * 0.35,
+        vy: (Math.random() - 0.5) * 0.35,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        alpha: Math.random() * 0.5 + 0.15,
+      });
+    }
+
+    (function animateParticles() {
+      pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+      particles.forEach(p => {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0) p.x = pCanvas.width;
+        if (p.x > pCanvas.width) p.x = 0;
+        if (p.y < 0) p.y = pCanvas.height;
+        if (p.y > pCanvas.height) p.y = 0;
+        pCtx.beginPath();
+        pCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        pCtx.fillStyle = p.color + p.alpha + ')';
+        pCtx.fill();
+      });
+      requestAnimationFrame(animateParticles);
+    })();
+  }
+
+  // ── Floating hex strings ──────────────────────────────────
+  const hexContainer = document.getElementById('hex-deco-container');
+  if (hexContainer) {
+    const hexSamples = [
+      '5f4dcc3b5aa765d61d8327deb882cf99',
+      'a665a45920422f9d417e4867efdc4fb8',
+      '2bb80d537b1da3e38bd30361aa855686',
+      'e10adc3949ba59abbe56e057f20f883e',
+      '25f9e794323b453885f5181f1b624d0b',
+    ];
+    for (let i = 0; i < 10; i++) {
+      const el = document.createElement('div');
+      el.className = 'hex-item';
+      el.textContent = hexSamples[Math.floor(Math.random() * hexSamples.length)];
+      el.style.left   = Math.random() * 90 + '%';
+      el.style.bottom = '-20px';
+      const dur  = 18 + Math.random() * 16;
+      const del  = Math.random() * -20;
+      el.style.animationDuration = dur + 's';
+      el.style.animationDelay    = del + 's';
+      hexContainer.appendChild(el);
+    }
+  }
+
+  // ── Hash stream lines ─────────────────────────────────────
+  const streamHashes = [
+    '5f4dcc3b5aa765d61d8327deb882cf99 · a665a45920422f9d417e4867efdc4fb8 · 2bb80d537b1da3e38bd30361aa855686 · e10adc3949ba59abbe56e057f20f883e · ',
+    '25f9e794323b453885f5181f1b624d0b · d8578edf8458ce06fbc5bb76a58c5ca4 · 5f4dcc3b5aa765d61d8327deb882cf99 · b14a7b8059d9c055954c92674ce60032 · ',
+    'aab3238922bcc25a6f606eb525ffdc56 · c4ca4238a0b923820dcc509a6f75849b · eccbc87e4b5ce2fe28308fd9f2a7baf3 · ',
+  ];
+  ['hsl1','hsl2','hsl3'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = streamHashes[i] + streamHashes[i]; // duplicate for seamless loop
+  });
+
+  // ── Modals ────────────────────────────────────────────────
+  function openModal(id) {
+    document.getElementById(id).classList.add('active');
+  }
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('active');
+  }
+
+  const settingsBtn = document.getElementById('settings-btn');
+  const creditsBtn  = document.getElementById('credits-btn');
+  if (settingsBtn) settingsBtn.addEventListener('click', () => openModal('settings-modal'));
+  if (creditsBtn)  creditsBtn.addEventListener('click',  () => openModal('credits-modal'));
+
+  document.getElementById('settings-close').addEventListener('click', () => closeModal('settings-modal'));
+  document.getElementById('credits-close').addEventListener('click',  () => closeModal('credits-modal'));
+
+  // Close modal on overlay click
+  ['settings-modal','credits-modal'].forEach(id => {
+    document.getElementById(id).addEventListener('click', e => {
+      if (e.target.id === id) closeModal(id);
+    });
+  });
+
+  // ── Unified Audio UI Sync ────────────────────────────────
+  function syncAudioUI() {
+    const on = game.audio.enabled;
+
+    // Pause UI
+    if (pauseSoundIcon) pauseSoundIcon.textContent = on ? '🔊' : '🔇';
+    if (pauseSoundLbl)  pauseSoundLbl.textContent  = on ? 'SOM: LIGADO' : 'SOM: DESLIGADO';
+
+    // Settings modal toggle
+    const mainToggle = document.getElementById('sound-toggle');
+    if (mainToggle) {
+      mainToggle.dataset.on = on.toString();
+      const lbl = mainToggle.querySelector('.toggle-label');
+      if (lbl) lbl.textContent = on ? 'LIGADO' : 'DESLIGADO';
+    }
+
+    // Title screen audio pill
+    const titleAudioBtn = document.getElementById('title-audio-btn');
+    const titleAudioIcon = document.getElementById('title-audio-icon');
+    const titleAudioLbl = document.getElementById('title-audio-label');
+    if (titleAudioBtn) {
+      if (on) {
+        titleAudioBtn.classList.remove('muted');
+        if (titleAudioIcon) titleAudioIcon.textContent = '🔊';
+        if (titleAudioLbl)  titleAudioLbl.textContent  = "MÚSICA: ROCCOW · PARTY'S CANCELLED";
+      } else {
+        titleAudioBtn.classList.add('muted');
+        if (titleAudioIcon) titleAudioIcon.textContent = '🔇';
+        if (titleAudioLbl)  titleAudioLbl.textContent  = "SOM: MUTADO (CLIQUE P/ ATIVAR)";
+      }
+    }
+  }
+
+  // Title audio pill click
+  const titleAudioPill = document.getElementById('title-audio-btn');
+  if (titleAudioPill) {
+    titleAudioPill.addEventListener('click', () => {
+      game.audio.init();
+      game.audio.toggleSound();
+      syncAudioUI();
+    });
+  }
+
+  // ── Toggle switches ────────────────────────────────────────
+  document.querySelectorAll('.setting-toggle').forEach(toggle => {
+    toggle.addEventListener('click', () => {
+      const isOn = toggle.dataset.on === 'true';
+      toggle.dataset.on = (!isOn).toString();
+      toggle.querySelector('.toggle-label').textContent = !isOn ? 'LIGADO' : 'DESLIGADO';
+
+      // Sound toggle effect
+      if (toggle.id === 'sound-toggle') {
+        game.audio.init();
+        game.audio.toggleSound();
+        syncAudioUI();
+      }
+      // CRT toggle effect
+      if (toggle.id === 'crt-toggle') {
+        const crt = document.getElementById('crt-overlay');
+        if (crt) crt.style.display = !isOn ? '' : 'none';
+      }
+      // Particles toggle
+      if (toggle.id === 'particles-toggle' && pCanvas) {
+        pCanvas.style.display = !isOn ? '' : 'none';
+      }
+    });
+  });
+
+  // ── Difficulty buttons ─────────────────────────────────────
+  document.querySelectorAll('.diff-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
   // Character renderer
   const character = new CharacterRenderer(dom.room.characterCanvas);
   character.startAnimation();
@@ -1026,6 +1538,7 @@ function init() {
   // Start button
   document.getElementById('start-btn').addEventListener('click', () => {
     game.audio.init();
+    game.audio.stopMenuMusic();
     game.audio.playTone(440, 0.2, 'sine', 0.08);
     playStory();
   });
@@ -1034,7 +1547,78 @@ function init() {
   document.getElementById('restart-btn').addEventListener('click', () => {
     restartGame();
   });
+
+  // ── Pause System ───────────────────────────────────────────
+  const pauseOverlay   = document.getElementById('pause-overlay');
+  const pausePhaseEl   = document.getElementById('pause-phase');
+  const pauseScoreEl   = document.getElementById('pause-score');
+  const pauseSoundIcon = document.getElementById('pause-sound-icon');
+  const pauseSoundLbl  = document.getElementById('pause-sound-label');
+
+  function togglePause() {
+    // Only allow pause when actively playing
+    if (game.state !== GameState.PLAYING && !game.paused) return;
+
+    game.paused = !game.paused;
+
+    if (game.paused) {
+      game.state = GameState.PAUSED;
+      game.audio.pause();
+      game.audio.pauseDungeonMusic();
+
+      // Sync stats in pause screen
+      const phase = PHASES[game.currentPhase];
+      if (pausePhaseEl) pausePhaseEl.textContent = `${game.currentPhase + 1}/5`;
+      if (pauseScoreEl) pauseScoreEl.textContent = game.score;
+
+      // Sync sound icon
+      syncAudioUI();
+
+      pauseOverlay.classList.add('active');
+    } else {
+      game.state = GameState.PLAYING;
+      game.audio.resume();
+      game.audio.resumeDungeonMusic();
+      pauseOverlay.classList.remove('active');
+    }
+  }
+
+  // Pause button in HUD
+  const pauseBtn = document.getElementById('pause-btn');
+  if (pauseBtn) pauseBtn.addEventListener('click', () => togglePause());
+
+  // Resume button
+  document.getElementById('pause-resume-btn').addEventListener('click', () => {
+    if (game.paused) togglePause();
+  });
+
+  // Sound toggle inside pause
+  document.getElementById('pause-sound-btn').addEventListener('click', () => {
+    game.audio.toggleSound();
+    syncAudioUI();
+  });
+
+  // Back to main menu
+  document.getElementById('pause-menu-btn').addEventListener('click', () => {
+    pauseOverlay.classList.remove('active');
+    game.paused = false;
+    restartGame();
+  });
+
+  // Keyboard shortcut: P or ESC
+  document.addEventListener('keydown', e => {
+    if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+      // ESC closes modals first if open
+      const settingsOpen = document.getElementById('settings-modal').classList.contains('active');
+      const creditsOpen  = document.getElementById('credits-modal').classList.contains('active');
+      if (settingsOpen) { document.getElementById('settings-modal').classList.remove('active'); return; }
+      if (creditsOpen)  { document.getElementById('credits-modal').classList.remove('active');  return; }
+      togglePause();
+    }
+  });
 }
 
 // Boot!
 document.addEventListener('DOMContentLoaded', init);
+
+

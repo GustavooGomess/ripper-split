@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="RipperSplit - Quebre as hashes e escape da masmorra do John. Um jogo indie 2D de criptografia e hacking.">
+  <title>RipperSplit — Escape da Masmorra</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fira+Code:wght@400;600;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="game-container">
+    <!-- CRT Overlay -->
+    <div id="crt-overlay"></div>
+
+    <!-- ═══════════════ TITLE SCREEN ═══════════════ -->
+    <div id="title-screen" class="screen active">
+      <canvas id="matrix-canvas"></canvas>
+      <div class="title-content">
+        <div class="title-logo">
+          <h1 id="game-title">
+            <span class="title-ripper">RIPPER</span><span class="title-split">SPLIT</span>
+          </h1>
+          <div class="title-underline"></div>
+        </div>
+        <p class="tagline">Quebre as hashes. Escape da masmorra.</p>
+        <div class="title-buttons">
+          <button id="start-btn" class="btn-primary">
+            <span class="btn-icon">▶</span> INICIAR
+          </button>
+        </div>
+        <p class="credits">Um jogo sobre criptografia e sobrevivência</p>
+      </div>
+    </div>
+
+    <!-- ═══════════════ STORY SCREEN ═══════════════ -->
+    <div id="story-screen" class="screen">
+      <div class="story-container">
+        <div class="story-terminal">
+          <div class="terminal-header">
+            <span class="terminal-dot red"></span>
+            <span class="terminal-dot yellow"></span>
+            <span class="terminal-dot green"></span>
+            <span class="terminal-title">john@masmorra:~$</span>
+          </div>
+          <div class="terminal-body">
+            <div id="story-text"></div>
+            <span id="story-cursor" class="cursor">█</span>
+          </div>
+        </div>
+        <button id="skip-story" class="btn-secondary">PULAR ▸▸</button>
+      </div>
+    </div>
+
+    <!-- ═══════════════ GAME SCREEN ═══════════════ -->
+    <div id="game-screen" class="screen">
+      <!-- HUD -->
+      <div id="hud">
+        <div class="hud-left">
+          <div id="phase-indicator" class="hud-item">
+            <span class="hud-label">FASE</span>
+            <span id="phase-number" class="hud-value">1/5</span>
+          </div>
+        </div>
+        <div class="hud-center">
+          <div id="phase-name-hud" class="hud-phase-name"></div>
+        </div>
+        <div class="hud-right">
+          <div id="hints-display" class="hud-item">
+            <span class="hud-label">DICAS</span>
+            <span id="hints-count" class="hud-value">3</span>
+          </div>
+          <div id="score-display" class="hud-item">
+            <span class="hud-label">SCORE</span>
+            <span id="score-value" class="hud-value">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dungeon Room -->
+      <div id="dungeon-room">
+        <!-- Torches -->
+        <div class="torch torch-left">
+          <div class="flame"></div>
+          <div class="torch-base"></div>
+        </div>
+        <div class="torch torch-right">
+          <div class="flame"></div>
+          <div class="torch-base"></div>
+        </div>
+
+        <!-- Door -->
+        <div id="dungeon-door" class="door-locked">
+          <div class="door-frame">
+            <div class="door-panel left-panel"></div>
+            <div class="door-panel right-panel"></div>
+            <div class="door-lock">
+              <div class="lock-icon">🔒</div>
+            </div>
+          </div>
+          <div class="door-light"></div>
+        </div>
+
+        <!-- Character -->
+        <div id="character-container">
+          <canvas id="character-canvas" width="64" height="64"></canvas>
+        </div>
+
+        <!-- Puzzle Terminal -->
+        <div id="puzzle-terminal">
+          <div class="terminal-header">
+            <span class="terminal-dot red"></span>
+            <span class="terminal-dot yellow"></span>
+            <span class="terminal-dot green"></span>
+            <span class="terminal-title" id="terminal-title">hash_crack.exe</span>
+          </div>
+          <div class="terminal-body" id="puzzle-content">
+            <!-- Puzzle content injected by JS -->
+          </div>
+        </div>
+
+        <!-- Chains decoration -->
+        <div class="chains chain-left"></div>
+        <div class="chains chain-right"></div>
+      </div>
+
+      <!-- Phase Intro Overlay -->
+      <div id="phase-intro" class="overlay">
+        <div class="phase-intro-content">
+          <div class="phase-number-big" id="phase-num-big">01</div>
+          <h2 id="phase-title-intro"></h2>
+          <p id="phase-subtitle-intro"></p>
+          <div class="phase-intro-line"></div>
+        </div>
+      </div>
+
+      <!-- Success Overlay -->
+      <div id="success-overlay" class="overlay">
+        <div class="success-content">
+          <div class="success-icon">🔓</div>
+          <h2>HASH QUEBRADA!</h2>
+          <p id="success-message"></p>
+          <div class="success-score" id="success-score-add"></div>
+        </div>
+      </div>
+
+      <!-- Wrong Answer Overlay -->
+      <div id="wrong-overlay" class="overlay">
+        <div class="wrong-content">
+          <div class="wrong-icon">✖</div>
+          <p>Senha incorreta!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ VICTORY SCREEN ═══════════════ -->
+    <div id="victory-screen" class="screen">
+      <canvas id="confetti-canvas"></canvas>
+      <div class="victory-content">
+        <div class="victory-icon">🏆</div>
+        <h1 class="victory-title">LIBERDADE!</h1>
+        <p class="victory-subtitle">Você escapou da masmorra do John!</p>
+        <div class="victory-stats">
+          <div class="stat-item">
+            <span class="stat-label">Score Final</span>
+            <span class="stat-value" id="final-score">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Dicas Usadas</span>
+            <span class="stat-value" id="final-hints">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Hashes Quebradas</span>
+            <span class="stat-value" id="final-hashes">5</span>
+          </div>
+        </div>
+        <button id="restart-btn" class="btn-primary">
+          <span class="btn-icon">↺</span> JOGAR NOVAMENTE
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

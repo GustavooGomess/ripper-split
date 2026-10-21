@@ -888,11 +888,299 @@ class CharacterRenderer {
     if (this.animId) cancelAnimationFrame(this.animId);
   }
 }
+// ─── Pixel Wipe Transition System ───
+class PixelWipeTransition {
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.pixelSize = 20; // 20px pixel block gives authentic retro aesthetic
+    this.isAnimating = false;
+    this.resize();
+    window.addEventListener('resize', () => this.resize());
+  }
+
+  resize() {
+    this.canvas.width = window.innerWidth;
+    this.canvas.height = window.innerHeight;
+    this.cols = Math.ceil(this.canvas.width / this.pixelSize);
+    this.rows = Math.ceil(this.canvas.height / this.pixelSize);
+    this.generateGrid();
+  }
+
+  generateGrid() {
+    this.cells = [];
+    const maxDist = this.cols + this.rows;
+    for (let r = 0; r < this.rows; r++) {
+      for (let c = 0; c < this.cols; c++) {
+        // Diagonal progression [0, 1]
+        const diag = (c + r) / maxDist;
+        // Deterministic organic jitter [0, 1]
+        const jitter = Math.abs(Math.sin(c * 12.9898 + r * 78.233) * 43758.5453) % 1;
+        // Combine wave with pixel dither
+        const order = diag * 0.75 + jitter * 0.25;
+        this.cells.push({ c, r, order });
+      }
+    }
+    // Pre-sort cells chronologically
+    this.cells.sort((a, b) => a.order - b.order);
+  }
+
+  // Wipe IN: fills screen with pixel blocks (covers screen)
+  wipeIn(color = '#05060a', duration = 450) {
+    return new Promise(resolve => {
+      if (this.isAnimating) { resolve(); return; }
+      this.isAnimating = true;
+
+      this.canvas.classList.add('active');
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+      const totalCells = this.cells.length;
+      let drawnIndex = 0;
+      const startTime = performance.now();
+
+      const animate = (now) => {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        // Easing: ease-out
+        const eased = 1 - Math.pow(1 - progress, 2);
+        const targetIndex = Math.floor(eased * totalCells);
+
+        this.ctx.fillStyle = color;
+        while (drawnIndex < targetIndex && drawnIndex < totalCells) {
+          const cell = this.cells[drawnIndex];
+          this.ctx.fillRect(
+            cell.c * this.pixelSize,
+            cell.r * this.pixelSize,
+            this.pixelSize,
+            this.pixelSize
+          );
+          drawnIndex++;
+        }
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          // Fill entirely to ensure 100% solid coverage
+          this.ctx.fillStyle = color;
+          this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+          this.isAnimating = false;
+          resolve();
+        }
+      };
+
+      requestAnimationFrame(animate);
+    });
+  }
+
+  // Wipe OUT: removes pixel blocks (reveals screen underneath)
+  wipeOut(duration = 450) {
+    return new Promise(resolve => {
+      if (this.isAnimating) { resolve(); return; }
+      this.isAnimating = true;
+
+      const totalCells = this.cells.length;
+      let clearedIndex = 0;
+      const startTime = performance.now();
+
+      const animate = (now) => {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        // Easing: ease-in-out
+        const eased = progress < 0.5
+          ? 2 * progress * progress
+          : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+        const targetIndex = Math.floor(eased * totalCells);
+
+        while (clearedIndex < targetIndex && clearedIndex < totalCells) {
+          const cell = this.cells[clearedIndex];
+          this.ctx.clearRect(
+            cell.c * this.pixelSize,
+            cell.r * this.pixelSize,
+            this.pixelSize,
+            this.pixelSize
+          );
+          clearedIndex++;
+        }
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+          this.canvas.classList.remove('active');
+          this.isAnimating = false;
+          resolve();
+        }
+      };
+
+      requestAnimationFrame(animate);
+    });
+  }
+}
+
+// ─── Loading Screen System ───
+class LoadingScreenSystem {
+  constructor() {
+    this.screen = document.getElementById('loading-screen');
+    this.barFill = document.getElementById('loading-bar-fill');
+    this.barLabel = document.getElementById('loading-bar-label');
+    this.tipText = document.getElementById('loading-tip-text');
+    this.tipInterval = null;
+    this.progressInterval = null;
+
+    this.tips = [
+      'Base64 usa os caracteres A-Z, a-z, 0-9, + e / para codificar dados em blocos de 6 bits.',
+      'A cifra de César desloca cada letra um número fixo de posições no alfabeto.',
+      'MD5 sempre gera uma sequência hexadecimal de 32 caracteres. Hoje é vulnerável a colisões.',
+      'ROT13 é simétrico: aplicar ROT13 duas vezes restaura exatamente o texto original!',
+      'Hexadecimal usa base 16 (0-9 e A-F). Cada par de dígitos hex representa 1 byte (0 a 255).',
+      'John the Ripper é um dos crackers de senha em linha de comando mais lendários da história.',
+      'Usar dicas auxilia na quebra do código, mas deduz pontos valiosos do seu score final.',
+      'O caractere "=" no final de uma mensagem codificada é um preenchimento (padding) do Base64.',
+      'A tabela ASCII mapeia caracteres em números: "A" equivale a 65 em decimal (0x41 em hex).',
+      'Ataques de força bruta e dicionário são muito mais rápidos quando as senhas são fracas.',
+      'Pressione [ESC] durante a masmorra a qualquer momento para pausar a fuga.',
+      'Senhas fortes combinam maiúsculas, minúsculas, números e símbolos sem padrões previsíveis.',
+    ];
+
+    this.tipIndex = 0;
+  }
+
+  prepare() {
+    this.screen.classList.add('active');
+    this.barFill.style.width = '0%';
+    this.barLabel.textContent = 'INICIALIZANDO SISTEMA...';
+    this.tipIndex = Math.floor(Math.random() * this.tips.length);
+    this.tipText.textContent = this.tips[this.tipIndex];
+    this.tipText.classList.remove('fading-out', 'fading-in');
+  }
+
+  async changeTip() {
+    this.tipText.classList.add('fading-out');
+    await sleep(220);
+    this.tipIndex = (this.tipIndex + 1) % this.tips.length;
+    this.tipText.textContent = this.tips[this.tipIndex];
+    this.tipText.classList.remove('fading-out');
+    this.tipText.classList.add('fading-in');
+    if (game.audio && game.audio.enabled) {
+      game.audio.playTone(840, 0.02, 'square', 0.02);
+    }
+    setTimeout(() => {
+      this.tipText.classList.remove('fading-in');
+    }, 250);
+  }
+
+  run(durationMs = 2600) {
+    return new Promise(resolve => {
+      if (this.tipInterval) clearInterval(this.tipInterval);
+      if (this.progressInterval) clearInterval(this.progressInterval);
+
+      // Cycle tips smoothly every 1200ms
+      this.tipInterval = setInterval(() => {
+        this.changeTip();
+      }, 1200);
+
+      // Stepped progress simulation with retro status messages
+      let progress = 0;
+      const stepInterval = Math.max(25, Math.floor(durationMs / 32));
+
+      const statusStages = [
+        { at: 0, text: 'CARREGANDO DADOS DA CELA...' },
+        { at: 25, text: 'COMPILANDO CIFRAS...' },
+        { at: 50, text: 'GERANDO HASHES DE SEGURANÇA...' },
+        { at: 75, text: 'INICIALIZANDO TERMINAL...' },
+        { at: 95, text: 'ACESSO AUTORIZADO!' },
+      ];
+
+      this.progressInterval = setInterval(() => {
+        progress += 3 + Math.random() * 5;
+        if (progress >= 100) {
+          progress = 100;
+          this.barFill.style.width = '100%';
+          this.barLabel.textContent = 'PRONTO!';
+          clearInterval(this.progressInterval);
+        } else {
+          this.barFill.style.width = `${progress}%`;
+          const stage = statusStages.filter(s => progress >= s.at).pop();
+          if (stage) this.barLabel.textContent = stage.text;
+        }
+      }, stepInterval);
+
+      setTimeout(() => {
+        if (this.tipInterval) clearInterval(this.tipInterval);
+        if (this.progressInterval) clearInterval(this.progressInterval);
+        this.barFill.style.width = '100%';
+        this.barLabel.textContent = 'PRONTO!';
+        resolve();
+      }, durationMs);
+    });
+  }
+
+  hide() {
+    if (this.tipInterval) clearInterval(this.tipInterval);
+    if (this.progressInterval) clearInterval(this.progressInterval);
+    this.screen.classList.remove('active');
+  }
+}
+
+// Transition instances (initialized later in init())
+let pixelWipe = null;
+let loadingScreen = null;
 
 // ─── Screen Management ───
-function showScreen(screenName) {
+function showScreenDirect(screenName) {
   Object.values(dom.screens).forEach(s => s.classList.remove('active'));
-  dom.screens[screenName].classList.add('active');
+  if (dom.screens[screenName]) {
+    dom.screens[screenName].classList.add('active');
+  }
+}
+
+async function showScreenWithTransition(screenName, options = {}) {
+  const {
+    showLoading = true,
+    loadingDuration = 2600,
+    wipeDuration = 450,
+    wipeColor = '#05060a',
+    onScreenSwitch = null
+  } = options;
+
+  if (!pixelWipe || !loadingScreen) {
+    if (onScreenSwitch) onScreenSwitch();
+    showScreenDirect(screenName);
+    return;
+  }
+
+  if (showLoading) {
+    // 1. Wipe in to cover current screen
+    await pixelWipe.wipeIn(wipeColor, wipeDuration);
+
+    // 2. Prepare loading screen and wipe out to reveal it
+    loadingScreen.prepare();
+    await pixelWipe.wipeOut(wipeDuration);
+
+    // 3. Animate loading screen (progress bar + cycling tips)
+    await loadingScreen.run(loadingDuration);
+
+    // 4. Wipe in to cover loading screen
+    await pixelWipe.wipeIn(wipeColor, wipeDuration);
+
+    // 5. Hide loading screen and switch target screen underneath
+    loadingScreen.hide();
+    if (onScreenSwitch) onScreenSwitch();
+    showScreenDirect(screenName);
+
+    // 6. Wipe out to reveal destination screen
+    await pixelWipe.wipeOut(wipeDuration);
+  } else {
+    // Fast wipe transition without loading screen
+    await pixelWipe.wipeIn(wipeColor, wipeDuration);
+    if (onScreenSwitch) onScreenSwitch();
+    showScreenDirect(screenName);
+    await pixelWipe.wipeOut(wipeDuration);
+  }
+}
+
+function showScreen(screenName) {
+  showScreenDirect(screenName);
 }
 
 function showOverlay(overlayName) {
@@ -970,6 +1258,11 @@ async function playStory() {
     };
     document.addEventListener('keydown', handler);
     document.addEventListener('click', handler);
+  });
+
+  await showScreenWithTransition('game', {
+    showLoading: false,
+    wipeDuration: 420
   });
 
   startPhase(0);
@@ -1245,10 +1538,21 @@ async function handleSuccess(phase) {
 
   await sleep(2000);
 
-  // Next phase or victory
+  // Next phase or victory with smooth pixel wipe
   if (game.currentPhase < PHASES.length - 1) {
+    await showScreenWithTransition('game', {
+      showLoading: false,
+      wipeDuration: 380,
+      onScreenSwitch: () => {
+        dom.room.door.className = 'door-locked';
+      }
+    });
     startPhase(game.currentPhase + 1);
   } else {
+    await showScreenWithTransition('victory', {
+      showLoading: false,
+      wipeDuration: 500
+    });
     showVictory();
   }
 }
@@ -1345,6 +1649,13 @@ function sleep(ms) {
 // ─── Initialize Game ───
 function init() {
   dom.init();
+
+  // Transition & Loading Systems
+  const wipeCanvas = document.getElementById('pixel-wipe-canvas');
+  if (wipeCanvas) {
+    pixelWipe = new PixelWipeTransition(wipeCanvas);
+  }
+  loadingScreen = new LoadingScreenSystem();
 
   // Reliable audio unlocking on user interaction
   const tryStartMenuMusic = () => {
@@ -1547,17 +1858,40 @@ function init() {
   const character = new CharacterRenderer(dom.room.characterCanvas);
   character.startAnimation();
 
-  // Start button
-  document.getElementById('start-btn').addEventListener('click', () => {
+  // Start button (Menu -> Loading Screen -> Story)
+  document.getElementById('start-btn').addEventListener('click', async () => {
     game.audio.init();
     game.audio.stopMenuMusic();
     game.audio.playTone(440, 0.2, 'sine', 0.08);
+
+    await showScreenWithTransition('story', {
+      showLoading: true,
+      loadingDuration: 2800,
+      wipeDuration: 450,
+      onScreenSwitch: () => {
+        dom.storyText.textContent = '';
+      }
+    });
+
     playStory();
   });
 
-  // Restart button
+  // Helper for returning to menu with transition (Game/Victory -> Loading Screen -> Menu)
+  async function returnToMenuWithTransition() {
+    game.audio.stopDungeonMusic();
+    await showScreenWithTransition('title', {
+      showLoading: true,
+      loadingDuration: 2200,
+      wipeDuration: 450,
+      onScreenSwitch: () => {
+        restartGame();
+      }
+    });
+  }
+
+  // Restart button (Victory screen)
   document.getElementById('restart-btn').addEventListener('click', () => {
-    restartGame();
+    returnToMenuWithTransition();
   });
 
   // ── Pause System ───────────────────────────────────────────
@@ -1610,11 +1944,11 @@ function init() {
     syncAudioUI();
   });
 
-  // Back to main menu
+  // Back to main menu (Pause overlay)
   document.getElementById('pause-menu-btn').addEventListener('click', () => {
     pauseOverlay.classList.remove('active');
     game.paused = false;
-    restartGame();
+    returnToMenuWithTransition();
   });
 
   // Keyboard shortcut: ESC to pause / resume

@@ -81,9 +81,42 @@
     </defs>
   </svg>
 
+  <!-- Preloaded Menu Audio -->
+  <audio id="menu-bgm" src="assets/audio/menu-theme.mp3" loop preload="auto"></audio>
+
   <div id="game-container">
     <!-- CRT Overlay -->
     <div id="crt-overlay"></div>
+
+    <!-- ═══════════════ PIXEL WIPE TRANSITION ═══════════════ -->
+    <canvas id="pixel-wipe-canvas"></canvas>
+
+    <!-- ═══════════════ LOADING SCREEN ═══════════════ -->
+    <div id="loading-screen">
+      <div class="loading-content">
+        <div class="loading-logo">
+          <span class="loading-logo-ripper">RIPPER</span><span class="loading-logo-split">SPLIT</span>
+        </div>
+        <div class="loading-bar-container">
+          <div class="loading-bar-track">
+            <div class="loading-bar-fill" id="loading-bar-fill"></div>
+          </div>
+          <div class="loading-bar-label" id="loading-bar-label">CARREGANDO...</div>
+        </div>
+        <div class="loading-tip-container">
+          <div class="loading-tip-header">
+            <span class="loading-tip-badge">
+              <svg class="pixel-icon"><use href="#px-hint"></use></svg>
+              DICA DO HACKER
+            </span>
+          </div>
+          <p class="loading-tip-text" id="loading-tip-text">Preparando a masmorra...</p>
+        </div>
+        <div class="loading-footer">
+          <span class="loading-dots"><span>.</span><span>.</span><span>.</span></span>
+        </div>
+      </div>
+    </div>
 
     <!-- ═══════════════ TITLE SCREEN ═══════════════ -->
     <div id="title-screen" class="screen active">

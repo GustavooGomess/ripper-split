@@ -78,6 +78,14 @@
       <g id="px-restart" viewBox="0 0 16 16">
         <path d="M5,2 h6 v2 h-6 z M11,4 h2 v4 h-2 z M5,12 h6 v2 h-6 z M3,8 h2 v4 h-2 z M1,6 h4 v4 h-4 z"/>
       </g>
+      <!-- Plus / New Save (16x16) -->
+      <g id="px-plus" viewBox="0 0 16 16">
+        <path d="M7,2 h2 v5 h5 v2 h-5 v5 h-2 v-5 h-5 v-2 h5 z"/>
+      </g>
+      <!-- Trash / Delete Save (16x16) -->
+      <g id="px-trash" viewBox="0 0 16 16">
+        <path d="M5,2 h6 v1 h3 v2 h-12 v-2 h3 z M3,6 h10 v8 h-10 z M5,8 h2 v4 h-2 z M9,8 h2 v4 h-2 z" fill-rule="evenodd"/>
+      </g>
     </defs>
   </svg>
 
@@ -266,6 +274,224 @@
       </div>
     </div>
 
+    <!-- ═══════════════ SAVE SELECT SCREEN ═══════════════ -->
+    <div id="save-select-screen" class="screen">
+      <div class="title-scanlines"></div>
+      <div class="title-vignette"></div>
+
+      <div class="save-select-container">
+        <div class="save-select-header">
+          <div class="save-select-badge">
+            <svg class="pixel-icon"><use href="#px-credits"></use></svg>
+            <span>BANCO DE DADOS LOCAL · MEMORY CARD</span>
+          </div>
+          <h2 class="save-select-title">SELECIONE UM SAVE</h2>
+          <p class="save-select-subtitle">Escolha um slot vazio para iniciar um novo jogo ou continue sua fuga</p>
+        </div>
+
+        <!-- 3 Save Slots ("Telinhas") -->
+        <div class="save-slots-grid" id="save-slots-grid">
+          <!-- Rendered dynamically by SaveSystem in JS (Slots 1, 2, 3) -->
+        </div>
+
+        <div class="save-select-footer">
+          <button id="save-back-btn" class="menu-btn menu-btn--secondary save-back-btn">
+            <span class="menu-btn-icon">←</span>
+            <span class="menu-btn-text">VOLTAR AO MENU</span>
+          </button>
+          <span class="save-db-status" id="save-db-status">
+            <span class="save-db-dot"></span> DB LOCAL: CONECTADO
+          </span>
+        </div>
+      </div>
+
+      <!-- Delete Save Confirmation Modal -->
+      <div id="delete-save-modal" class="modal-overlay">
+        <div class="modal-box delete-modal-box">
+          <div class="modal-header">
+            <span class="modal-title" style="color: var(--neon-red);">
+              <svg class="pixel-icon"><use href="#px-trash"></use></svg>
+              APAGAR SAVE
+            </span>
+            <button id="delete-save-close" class="modal-close" title="Fechar">
+              <svg class="pixel-icon"><use href="#px-close"></use></svg>
+            </button>
+          </div>
+          <div class="modal-body delete-modal-body">
+            <p class="delete-modal-text" id="delete-modal-text">
+              Tem certeza que deseja apagar os dados do <strong>SLOT 01</strong>? Esta ação não pode ser desfeita.
+            </p>
+            <div class="delete-modal-actions">
+              <button id="delete-cancel-btn" class="pause-btn pause-btn--secondary">
+                <span>CANCELAR</span>
+              </button>
+              <button id="delete-confirm-btn" class="pause-btn delete-confirm-btn">
+                <svg class="pixel-icon"><use href="#px-trash"></use></svg>
+                <span>APAGAR SAVE</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ CHARACTER CREATION SCREEN ═══════════════ -->
+    <div id="char-create-screen" class="screen">
+      <div class="title-scanlines"></div>
+      <div class="title-vignette"></div>
+
+      <div class="char-create-container">
+        <div class="char-create-header">
+          <div class="save-select-badge" id="char-create-slot-badge">
+            <svg class="pixel-icon"><use href="#px-credits"></use></svg>
+            <span id="char-create-slot-text">NOVO SAVE · SLOT 01</span>
+          </div>
+          <h2 class="save-select-title">CRIAR PERSONAGEM</h2>
+          <p class="save-select-subtitle">Personalize seu hacker antes de entrar na masmorra</p>
+        </div>
+
+        <div class="char-create-panel">
+          <!-- Left: Pixel Art Preview Stage -->
+          <div class="char-preview-column">
+            <div class="char-stage-box">
+              <div class="char-stage-tag" id="char-gender-tag">MASCULINO</div>
+              <canvas id="char-preview-canvas" width="48" height="56"></canvas>
+              <div class="char-stage-pedestal"></div>
+            </div>
+
+            <div class="char-preview-controls">
+              <button type="button" class="char-ctrl-btn" id="char-rotate-left" title="Girar para esquerda">⟲ GIRAR</button>
+              <button type="button" class="char-ctrl-btn active" id="char-walk-toggle" title="Alternar animação de caminhada">🚶 ANDANDO</button>
+              <button type="button" class="char-ctrl-btn" id="char-rotate-right" title="Girar para direita">GIRAR ⟳</button>
+            </div>
+
+            <button type="button" class="char-random-btn" id="char-random-btn">
+              <svg class="pixel-icon"><use href="#px-particles"></use></svg>
+              <span>VISUAL ALEATÓRIO</span>
+            </button>
+          </div>
+
+          <!-- Right: Customization Controls -->
+          <div class="char-options-column">
+            <!-- Name & Gender Row -->
+            <div class="char-top-fields">
+              <div class="char-field-group char-name-group">
+                <label class="char-field-label" for="char-name-input">NOME DO PERSONAGEM</label>
+                <input
+                  type="text"
+                  id="char-name-input"
+                  class="char-name-input"
+                  maxlength="16"
+                  placeholder="Ex: Elliot, Alex, Neo..."
+                  autocomplete="off"
+                  spellcheck="false"
+                />
+              </div>
+
+              <div class="char-field-group char-gender-group">
+                <label class="char-field-label">GÊNERO / CORPO</label>
+                <div class="char-gender-switch">
+                  <button type="button" class="gender-btn active" data-gender="male" id="gender-male-btn">
+                    <span class="gender-symbol">♂</span> MASC
+                  </button>
+                  <button type="button" class="gender-btn" data-gender="female" id="gender-female-btn">
+                    <span class="gender-symbol">♀</span> FEM
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Appearance Steppers Grid -->
+            <div class="char-selectors-grid">
+              <!-- Skin Tone -->
+              <div class="char-selector-row">
+                <span class="char-cat-label">COR DE PELE</span>
+                <div class="char-stepper">
+                  <button type="button" class="stepper-btn" data-cat="skin" data-dir="-1">◀</button>
+                  <span class="stepper-val" id="val-skin">1/5</span>
+                  <button type="button" class="stepper-btn" data-cat="skin" data-dir="1">▶</button>
+                </div>
+              </div>
+
+              <!-- Hair Style -->
+              <div class="char-selector-row">
+                <span class="char-cat-label">CABELO</span>
+                <div class="char-stepper">
+                  <button type="button" class="stepper-btn" data-cat="hairStyle" data-dir="-1">◀</button>
+                  <span class="stepper-val" id="val-hairStyle">1/5</span>
+                  <button type="button" class="stepper-btn" data-cat="hairStyle" data-dir="1">▶</button>
+                </div>
+              </div>
+
+              <!-- Hair Color -->
+              <div class="char-selector-row">
+                <span class="char-cat-label">COR DO CABELO</span>
+                <div class="char-stepper">
+                  <button type="button" class="stepper-btn" data-cat="hairColor" data-dir="-1">◀</button>
+                  <span class="stepper-val" id="val-hairColor">1/6</span>
+                  <button type="button" class="stepper-btn" data-cat="hairColor" data-dir="1">▶</button>
+                </div>
+              </div>
+
+              <!-- Top / Shirt / Jacket -->
+              <div class="char-selector-row">
+                <span class="char-cat-label">PARTE DE CIMA</span>
+                <div class="char-stepper">
+                  <button type="button" class="stepper-btn" data-cat="top" data-dir="-1">◀</button>
+                  <span class="stepper-val" id="val-top">1/5</span>
+                  <button type="button" class="stepper-btn" data-cat="top" data-dir="1">▶</button>
+                </div>
+              </div>
+
+              <!-- Pants -->
+              <div class="char-selector-row">
+                <span class="char-cat-label">CALÇAS</span>
+                <div class="char-stepper">
+                  <button type="button" class="stepper-btn" data-cat="pants" data-dir="-1">◀</button>
+                  <span class="stepper-val" id="val-pants">1/5</span>
+                  <button type="button" class="stepper-btn" data-cat="pants" data-dir="1">▶</button>
+                </div>
+              </div>
+
+              <!-- Shoes / Sneakers -->
+              <div class="char-selector-row">
+                <span class="char-cat-label">TÊNIS / BOTAS</span>
+                <div class="char-stepper">
+                  <button type="button" class="stepper-btn" data-cat="shoes" data-dir="-1">◀</button>
+                  <span class="stepper-val" id="val-shoes">1/5</span>
+                  <button type="button" class="stepper-btn" data-cat="shoes" data-dir="1">▶</button>
+                </div>
+              </div>
+
+              <!-- Accessories -->
+              <div class="char-selector-row">
+                <span class="char-cat-label">ACESSÓRIOS</span>
+                <div class="char-stepper">
+                  <button type="button" class="stepper-btn" data-cat="accessory" data-dir="-1">◀</button>
+                  <span class="stepper-val" id="val-accessory">1/5</span>
+                  <button type="button" class="stepper-btn" data-cat="accessory" data-dir="1">▶</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="char-create-footer">
+          <button type="button" id="char-back-btn" class="menu-btn menu-btn--secondary save-back-btn">
+            <span class="menu-btn-icon">←</span>
+            <span class="menu-btn-text">VOLTAR AOS SAVES</span>
+          </button>
+
+          <button type="button" id="char-confirm-btn" class="menu-btn menu-btn--primary char-confirm-btn">
+            <span class="menu-btn-glitch"></span>
+            <span class="menu-btn-icon"><svg class="pixel-icon"><use href="#px-play"></use></svg></span>
+            <span class="menu-btn-text">CONFIRMAR & INICIAR JOGO</span>
+            <span class="menu-btn-arrow">→</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- ═══════════════ STORY SCREEN ═══════════════ -->
     <div id="story-screen" class="screen">
       <div class="story-container">
@@ -287,9 +513,19 @@
 
     <!-- ═══════════════ GAME SCREEN ═══════════════ -->
     <div id="game-screen" class="screen">
+      <!-- Auto-save toast indicator -->
+      <div id="save-toast" class="save-toast">
+        <svg class="pixel-icon"><use href="#px-credits"></use></svg>
+        <span id="save-toast-text">PROGRESSO SALVO</span>
+      </div>
+
       <!-- HUD -->
       <div id="hud">
         <div class="hud-left">
+          <div id="slot-indicator" class="hud-item">
+            <span class="hud-label">SAVE</span>
+            <span id="slot-number-hud" class="hud-value">SLOT 1</span>
+          </div>
           <div id="phase-indicator" class="hud-item">
             <span class="hud-label">FASE</span>
             <span id="phase-number" class="hud-value">1/5</span>
@@ -313,51 +549,55 @@
         </div>
       </div>
 
-      <!-- Dungeon Room -->
+      <!-- Dungeon Room (Top-Down 8-Bit / 16-Bit View) -->
       <div id="dungeon-room">
-        <!-- Torches -->
-        <div class="torch torch-left">
-          <div class="flame"></div>
-          <div class="torch-base"></div>
-        </div>
-        <div class="torch torch-right">
-          <div class="flame"></div>
-          <div class="torch-base"></div>
-        </div>
+        <div id="room-viewport">
+          <canvas id="room-canvas" width="384" height="256"></canvas>
 
-        <!-- Door -->
-        <div id="dungeon-door" class="door-locked">
-          <div class="door-frame">
-            <div class="door-panel left-panel"></div>
-            <div class="door-panel right-panel"></div>
-            <div class="door-lock">
-              <div class="lock-icon"><svg class="pixel-icon"><use href="#px-lock"></use></svg></div>
+          <!-- Interactive Door with Padlock Overlay (North Wall Center) -->
+          <div id="dungeon-door" class="door-locked" title="Porta com Cadeado (Clique ou pressione E perto)">
+            <div id="door-prompt" class="door-prompt">
+              <span class="door-prompt-icon" id="door-prompt-icon"><svg class="pixel-icon"><use href="#px-lock"></use></svg></span>
+              <span id="door-prompt-text">[E] DECIFRAR CADEADO</span>
             </div>
           </div>
-          <div class="door-light"></div>
         </div>
 
-        <!-- Character -->
-        <div id="character-container">
+        <!-- Legacy character canvas kept hidden for compatibility -->
+        <div id="character-container" style="display: none;">
           <canvas id="character-canvas" width="64" height="64"></canvas>
         </div>
 
-        <!-- Puzzle Terminal -->
-        <div id="puzzle-terminal">
-          <div class="terminal-header">
-            <span class="terminal-dot red"></span>
-            <span class="terminal-dot yellow"></span>
-            <span class="terminal-dot green"></span>
-            <span class="terminal-title" id="terminal-title">hash_crack.exe</span>
-          </div>
-          <div class="terminal-body" id="puzzle-content">
-            <!-- Puzzle content injected by JS -->
-          </div>
+        <!-- Bottom Controls Bar -->
+        <div id="controls-hud">
+          <span class="ctrl-group"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> Andar pelo quarto</span>
+          <span class="ctrl-divider">•</span>
+          <span class="ctrl-group"><kbd>E</kbd> ou <kbd>ESPAÇO</kbd> Interagir com Cadeado</span>
+          <span class="ctrl-divider">•</span>
+          <span class="ctrl-group"><kbd>ESC</kbd> Pausar</span>
         </div>
 
-        <!-- Chains decoration -->
-        <div class="chains chain-left"></div>
-        <div class="chains chain-right"></div>
+        <!-- Puzzle Terminal Modal (Only opens when interacting with the Door Padlock) -->
+        <div id="puzzle-terminal-backdrop" class="terminal-backdrop">
+          <div id="puzzle-terminal">
+            <div class="terminal-header">
+              <span class="terminal-dot red"></span>
+              <span class="terminal-dot yellow"></span>
+              <span class="terminal-dot green"></span>
+              <span class="terminal-lock-tag">
+                <svg class="pixel-icon"><use href="#px-lock"></use></svg>
+                CADEADO DA PORTA
+              </span>
+              <span class="terminal-title" id="terminal-title">hash_crack.exe</span>
+              <button id="terminal-close-btn" class="terminal-close-btn" title="Fechar Cadeado (ESC)">
+                <svg class="pixel-icon"><use href="#px-close"></use></svg>
+              </button>
+            </div>
+            <div class="terminal-body" id="puzzle-content">
+              <!-- Puzzle content injected by JS -->
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Phase Intro Overlay -->
